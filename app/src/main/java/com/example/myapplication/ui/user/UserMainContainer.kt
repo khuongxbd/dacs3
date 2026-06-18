@@ -15,9 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.data.model.ClassModel
-import com.example.myapplication.data.model.ClassQuiz // 🌟 Nhớ import ClassQuiz nếu chưa có nhé Khương
+import com.example.myapplication.data.model.ClassQuiz
 
-// Các Route nội bộ bên trong BottomBar của User
 sealed class UserTab(val route: String, val title: String, val icon: ImageVector) {
     object Home : UserTab("u_home", "Trang chủ", Icons.Default.Home)
     object Classes : UserTab("u_classes", "Lớp học", Icons.Default.Star)
@@ -31,6 +30,9 @@ fun UserMainContainer(navController: NavHostController) {
     val subNavController = rememberNavController()
     val items = listOf(UserTab.Home, UserTab.Classes, UserTab.Search, UserTab.Notifications, UserTab.Profile)
     var selectedItem by remember { mutableStateOf(0) }
+
+    // 🔥 STATE GIỮ BÀI THI ĐANG CHỌN ĐỂ TRUYỀN SANG ROUTE ĐỘC LẬP
+    var globalSelectedQuiz by remember { mutableStateOf<ClassQuiz?>(null) }
 
     Scaffold(
         bottomBar = {
@@ -58,17 +60,26 @@ fun UserMainContainer(navController: NavHostController) {
             startDestination = UserTab.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
+            // ==================== ROUTE 1: TRANG CHỦ ====================
             composable(UserTab.Home.route) {
-                UserHomeScreen(navController = navController)
+                UserHomeScreen(
+                    navController = navController,
+                    onNavigateToQuiz = { _, quizObj ->
+                        globalSelectedQuiz = quizObj
+                        subNavController.navigate("student_quiz_screen") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToReviewWrongs = {
+                        subNavController.navigate("review_wrongs_screen") { launchSingleTop = true }
+                    }
+                )
             }
 
+            // ==================== ROUTE 2: LỚP HỌC ====================
             composable(UserTab.Classes.route) {
-                // Quản lý trạng thái màn hình con nội bộ
                 var currentSubScreen by remember { mutableStateOf("list") }
-
-                // QUẢN LÝ THÔNG MINH: Lưu trữ trực tiếp đối tượng lớp học và bài kiểm tra
                 var selectedClass by remember { mutableStateOf<ClassModel?>(null) }
-                var selectedQuiz by remember { mutableStateOf<ClassQuiz?>(null) } // 🌟 THÊM: State giữ bài kiểm tra đang chọn giải
                 var targetSetId by remember { mutableStateOf("") }
 
                 when (currentSubScreen) {
@@ -91,18 +102,19 @@ fun UserMainContainer(navController: NavHostController) {
                                     currentSubScreen = "study"
                                 },
                                 onNavigateToQuizPractice = { setId ->
-                                    // 🚀 ĐÃ CẬP NHẬT: Lưu mã bộ từ vựng và mở màn luyện trắc nghiệm từ
                                     targetSetId = setId
                                     currentSubScreen = "quiz_practice"
                                 },
                                 onNavigateToTypingPractice = { setId ->
-                                    // 🚀 ĐÃ CẬP NHẬT: Lưu mã bộ từ vựng và mở màn luyện gõ từ
                                     targetSetId = setId
                                     currentSubScreen = "typing_practice"
                                 },
                                 onNavigateToClassQuiz = { quizObj ->
-                                    selectedQuiz = quizObj
-                                    currentSubScreen = "take_quiz"
+                                    // 🔥 SỬA ĐỂ ĐỒNG BỘ: Gán dữ liệu vào state chung và nhảy sang Route độc lập
+                                    globalSelectedQuiz = quizObj
+                                    subNavController.navigate("student_quiz_screen") {
+                                        launchSingleTop = true
+                                    }
                                 }
                             )
                         }
@@ -116,38 +128,39 @@ fun UserMainContainer(navController: NavHostController) {
                             )
                         }
                     }
-                    // 🌟 THÊM: Màn hình trắc nghiệm từ vựng tự do (Học phần được giao)
                     "quiz_practice" -> {
                         if (selectedClass != null) {
-                            // Gọi đến màn hình trắc nghiệm từ vựng của cậu
-                            // Truyền vào setId để màn hình đó tự lấy danh sách từ ra luyện tập
                             VocabQuizPracticeScreen(
                                 setId = targetSetId,
                                 onBack = { currentSubScreen = "detail" }
                             )
                         }
                     }
-                    // 🌟 THÊM: Màn hình gõ từ vựng (Nhìn nghĩa viết từ)
                     "typing_practice" -> {
                         if (selectedClass != null) {
-                            // Gọi đến màn hình gõ từ vựng của cậu
                             VocabTypingPracticeScreen(
                                 setId = targetSetId,
                                 onBack = { currentSubScreen = "detail" }
                             )
                         }
                     }
-                    "take_quiz" -> {
-                        if (selectedQuiz != null) {
-                            StudentQuizScreen(
-                                quiz = selectedQuiz!!,
-                                onBack = {
-                                    currentSubScreen = "detail"
-                                    selectedQuiz = null
-                                }
-                            )
+                }
+            }
+
+            // ==================== 🔥 ROUTE: MÀN HÌNH LÀM BÀI ĐỘC LẬP ====================
+            composable("student_quiz_screen") {
+                if (globalSelectedQuiz != null) {
+                    StudentQuizScreen(
+                        quiz = globalSelectedQuiz!!,
+                        onBack = {
+                            globalSelectedQuiz = null
+                            subNavController.popBackStack()
+
+                            // Đồng bộ lại chỉ số highlight mục BottomBar dựa vào màn hình trước đó
+                            val currentRoute = subNavController.currentDestination?.route
+                            selectedItem = if (currentRoute == UserTab.Home.route) 0 else 1
                         }
-                    }
+                    )
                 }
             }
 
@@ -161,6 +174,17 @@ fun UserMainContainer(navController: NavHostController) {
 
             composable(UserTab.Profile.route) {
                 UserProfileScreen(rootNavController = navController)
+            }
+
+            // ==================== 🔥 ROUTE: MÀN HÌNH ÔN TẬP CÂU SAI ĐỘC LẬP ====================
+            composable("review_wrongs_screen") {
+                ReviewWrongQuestionsScreen(
+                    onBack = {
+                        subNavController.popBackStack()
+                        // Trả màu Highlight BottomBar về lại Home (0) sau khi thoát ôn tập
+                        selectedItem = 0
+                    }
+                )
             }
         }
     }

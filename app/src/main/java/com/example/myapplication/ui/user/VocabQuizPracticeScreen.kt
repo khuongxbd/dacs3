@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,9 @@ fun VocabQuizPracticeScreen(
     setId: String,
     onBack: () -> Unit
 ) {
+    val BlackColor = Color.Black
+    val WhiteColor = Color.White
+
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
 
@@ -48,7 +52,6 @@ fun VocabQuizPracticeScreen(
     val selectedAnswers = remember { mutableStateMapOf<Int, String>() }
     var isSubmitted by remember { mutableStateOf(false) }
 
-    // Tự động kéo bộ từ vựng và sinh bộ đề trắc nghiệm ngẫu nhiên
     LaunchedEffect(setId) {
         if (setId.isBlank()) {
             isLoading = false
@@ -112,22 +115,22 @@ fun VocabQuizPracticeScreen(
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Luyện Tập Trắc Nghiệm Từ Vựng", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại") }
-                }
+                title = { Text("LUYỆN TẬP TRẮC NGHIỆM", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = null) } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BlackColor, titleContentColor = WhiteColor, navigationIconContentColor = WhiteColor)
             )
         }
     ) { paddingValues ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Color.Black)
             }
         } else if (quizQuestions.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("Không có dữ liệu câu hỏi.", color = Color.Gray)
+                Text("Không có dữ liệu câu hỏi.", fontWeight = FontWeight.Bold)
             }
         } else {
             val currentQuestion = quizQuestions[currentQuestionIndex]
@@ -142,124 +145,111 @@ fun VocabQuizPracticeScreen(
                 if (!isSubmitted) {
                     // ==================== GIAO DIỆN ĐANG LÀM BÀI ====================
                     Text(
-                        text = "Câu hỏi ${currentQuestionIndex + 1} / ${quizQuestions.size}",
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 14.sp
+                        text = "CÂU HỎI ${currentQuestionIndex + 1} / ${quizQuestions.size}",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        color = Color.Gray
                     )
 
                     LinearProgressIndicator(
                         progress = { (currentQuestionIndex + 1).toFloat() / quizQuestions.size },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        modifier = Modifier.fillMaxWidth().height(8.dp).padding(vertical = 8.dp).border(2.dp, Color.Black),
+                        color = Color(0xFF00C853), // LimeGreen
+                        trackColor = Color.White
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Column(
                         modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(text = currentQuestion.questionText, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = currentQuestion.questionText, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
 
                         currentQuestion.options.forEach { optionText ->
                             val isSelected = studentChoice == optionText
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedAnswers[currentQuestionIndex] = optionText }
-                                    .border(
-                                        width = 2.dp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        shape = RoundedCornerShape(12.dp)
-                                    ),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                ),
+                                    .shadow(4.dp, RoundedCornerShape(12.dp), spotColor = Color.Black)
+                                    .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
+                                    .clickable { selectedAnswers[currentQuestionIndex] = optionText },
+                                colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF00C853) else Color.White),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(selected = isSelected, onClick = { selectedAnswers[currentQuestionIndex] = optionText })
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = optionText, fontSize = 15.sp)
-                                }
+                                Text(
+                                    text = optionText,
+                                    modifier = Modifier.padding(20.dp),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
                             }
                         }
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
                             onClick = { if (currentQuestionIndex > 0) currentQuestionIndex-- },
-                            enabled = currentQuestionIndex > 0
-                        ) { Text("Câu trước") }
+                            enabled = currentQuestionIndex > 0,
+                            modifier = Modifier.weight(1f).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                        ) { Text("QUAY LẠI", fontWeight = FontWeight.ExtraBold) }
 
-                        if (currentQuestionIndex < quizQuestions.size - 1) {
-                            Button(onClick = { currentQuestionIndex++ }) { Text("Câu tiếp") }
-                        } else {
-                            Button(
-                                onClick = { isSubmitted = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007A33))
-                            ) { Text("Nộp bài 🏁") }
-                        }
+                        Button(
+                            onClick = { if (currentQuestionIndex < quizQuestions.size - 1) currentQuestionIndex++ else isSubmitted = true },
+                            modifier = Modifier.weight(1f).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = if (currentQuestionIndex == quizQuestions.size - 1) Color(0xFF00C853) else Color.Black)
+                        ) { Text(if (currentQuestionIndex == quizQuestions.size - 1) "NỘP BÀI" else "TIẾP THEO", fontWeight = FontWeight.ExtraBold) }
                     }
                 } else {
-                    // ==================== GIAO DIỆN SAU KHI NỘP BÀI (KẾT QUẢ) ====================
-                    val correctCount = quizQuestions.indices.count { idx ->
-                        selectedAnswers[idx] == quizQuestions[idx].correctOption
-                    }
+                    // ==================== GIAO DIỆN SAU KHI NỘP BÀI ====================
+                    val correctCount = quizQuestions.indices.count { selectedAnswers[it] == quizQuestions[it].correctOption }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                        shape = RoundedCornerShape(16.dp)
+                        modifier = Modifier.fillMaxWidth().border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF007A33), modifier = Modifier.size(48.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Hoàn Thành Ôn Luyện!", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text(
-                                text = "Đúng $correctCount / ${quizQuestions.size} từ vựng",
-                                fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary
-                            )
+                        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("KẾT QUẢ", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                            Text("$correctCount / ${quizQuestions.size}", fontWeight = FontWeight.Black, fontSize = 48.sp, color = Color(0xFF00C853))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Chi tiết kết quả ôn tập:", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("CHI TIẾT KẾT QUẢ:", fontWeight = FontWeight.Black)
 
                     Box(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
-                        androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(quizQuestions.size) { idx ->
                                 val q = quizQuestions[idx]
-                                val ans = selectedAnswers[idx] ?: "Chưa chọn đáp án"
+                                val ans = selectedAnswers[idx] ?: "Chưa trả lời"
                                 val isCorrect = ans == q.correctOption
 
                                 Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = if (isCorrect) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)),
-                                    shape = RoundedCornerShape(12.dp)
+                                    modifier = Modifier.fillMaxWidth().border(2.dp, Color.Black, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = if (isCorrect) Color(0xFFE8F5E9) else Color(0xFFFFEBEE))
                                 ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(text = q.questionText, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "• Lựa chọn của bạn: $ans", fontSize = 13.sp, color = if(isCorrect) Color(0xFF2E7D32) else Color(0xFFC62828))
-                                        Text(text = "• Đáp án đúng: ${q.correctOption}", fontSize = 13.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Medium)
-                                        Text(text = "👉 Ghi nhớ: ${q.originalWord} nghĩa là ${q.originalMeaning}", fontSize = 12.sp, color = Color.DarkGray)
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(text = q.questionText, fontWeight = FontWeight.Bold)
+                                        Text("Đáp án của bạn: $ans", color = if (isCorrect) Color(0xFF2E7D32) else Color.Red, fontWeight = FontWeight.Bold)
+                                        Text("Đáp án đúng: ${q.correctOption}", fontWeight = FontWeight.Black)
                                     }
                                 }
                             }
                         }
                     }
 
-                    Button(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                        Text("Trở lại lớp học")
+                    Button(
+                        onClick = onBack,
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Text("TRỞ LẠI LỚP HỌC", fontWeight = FontWeight.ExtraBold)
                     }
                 }
             }

@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.myapplication"
@@ -31,6 +29,9 @@ android {
         }
     }
     compileOptions {
+        // 🚀 BƯỚC 1: Bật tính năng desugaring để hỗ trợ các hàm Java 8+ / MethodHandle trên máy cũ
+        isCoreLibraryDesugaringEnabled = true
+
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -40,6 +41,8 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -57,15 +60,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.navigation:navigation-compose:2.8.8")
 
-    // Firebase BoM (Bill of Materials)
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
 
-    // Firebase Authentication & Cloud Firestore
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
 
-    // Các thư viện Android cơ bản
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")

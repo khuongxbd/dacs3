@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.user
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,11 +28,12 @@ fun FlashcardStudyScreen(classId: String, setId: String, onBack: () -> Unit) {
     val db = FirebaseFirestore.getInstance()
     var flashcardSet by remember { mutableStateOf<FlashcardSet?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    val BlackColor = Color.Black
+    val WhiteColor = Color.White
 
     // 0: Chế độ học Flashcard, 1: Chế độ trắc nghiệm nhanh
     var studyMode by remember { mutableStateOf(0) }
 
-    // 🔥 ĐÃ SỬA: Thay đổi đường dẫn truy vấn trỏ thẳng vào gốc "vocabularies" để kéo data
     LaunchedEffect(setId) {
         if (setId.isBlank()) {
             isLoading = false
@@ -51,12 +55,10 @@ fun FlashcardStudyScreen(classId: String, setId: String, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(flashcardSet?.title ?: "Học Từ Vựng") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
-                    }
-                }
+                title = { Text(flashcardSet?.title ?: "Học Từ Vựng", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = null) } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BlackColor, titleContentColor = WhiteColor, navigationIconContentColor = WhiteColor)
+
             )
         }
     ) { padding ->
@@ -88,72 +90,49 @@ fun FlashcardStudyScreen(classId: String, setId: String, onBack: () -> Unit) {
 @Composable
 fun FlashcardView(words: List<WordItem>) {
     var currentIndex by remember { mutableStateOf(0) }
-    var isFlipped by remember { mutableStateOf(false) } // false: Tiếng Anh, true: Tiếng Việt
-
-    // Hiệu ứng xoay mượt mà khi bấm lật thẻ
+    var isFlipped by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(targetValue = if (isFlipped) 180f else 0f, label = "cardFlip")
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text("Từ số: ${currentIndex + 1}/${words.size}", style = MaterialTheme.typography.titleMedium)
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // Progress Bar kiểu Neobrutalism
+        Text("TỪ VỰNG ${currentIndex + 1}/${words.size}", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
 
-        // Thẻ Flashcard có hiệu ứng 3D xoay lật
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .graphicsLayer {
-                    rotationY = rotation
-                    cameraDistance = 8 * density
-                }
+                .padding(vertical = 20.dp)
+                .fillMaxWidth(0.9f)
+                .height(350.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = Color.Black)
+                .border(3.dp, Color.Black, RoundedCornerShape(16.dp))
+                .graphicsLayer { rotationY = rotation; cameraDistance = 8 * density }
                 .clickable { isFlipped = !isFlipped },
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (rotation <= 90f) {
-                    // Mặt trước: Tiếng Anh
-                    Text(
-                        text = words[currentIndex].word,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    // Mặt sau: Tiếng Việt (Xoay ngược lại 180 độ chữ để không bị lật ngược mắt nhìn)
-                    Text(
-                        text = words[currentIndex].meaning,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.graphicsLayer { rotationY = 180f }
-                    )
-                }
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = if (rotation <= 90f) words[currentIndex].word else words[currentIndex].meaning,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(20.dp).graphicsLayer { if (rotation > 90f) rotationY = 180f }
+                )
             }
         }
 
-        // Nút bấm chuyển đổi từ vựng trước/sau
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        // Action Buttons đồng bộ với thiết kế màn hình ClassDetail
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
                 onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } },
-                enabled = currentIndex > 0
-            ) { Text("Từ trước") }
+                modifier = Modifier.weight(1f).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+            ) { Text("BACK", fontWeight = FontWeight.ExtraBold) }
 
             Button(
                 onClick = { if (currentIndex < words.size - 1) { currentIndex++; isFlipped = false } },
-                enabled = currentIndex < words.size - 1
-            ) { Text("Từ tiếp theo") }
+                modifier = Modifier.weight(1f).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = Color.Black)
+            ) { Text("NEXT", fontWeight = FontWeight.ExtraBold) }
         }
     }
 }
@@ -164,74 +143,48 @@ fun QuizVocabView(words: List<WordItem>) {
     var currentIndex by remember { mutableStateOf(0) }
     var selectedAnswer by remember { mutableStateOf("") }
     var isAnswered by remember { mutableStateOf(false) }
-    var score by remember { mutableStateOf(0) }
-
     val currentWord = words[currentIndex]
 
-    // Tạo danh sách 4 đáp án (gồm 1 đáp án đúng và 3 đáp án ngẫu nhiên khác)
     val options = remember(currentIndex) {
-        val wrongOptions = words.filter { it.meaning != currentWord.meaning }.map { it.meaning }.shuffled().take(3)
-        (wrongOptions + currentWord.meaning).shuffled()
+        (words.filter { it.meaning != currentWord.meaning }.map { it.meaning }.shuffled().take(3) + currentWord.meaning).shuffled()
     }
 
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-        Column {
-            Text("Hãy chọn nghĩa đúng của từ:", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = currentWord.word,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(currentWord.word.uppercase(), fontSize = 40.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(30.dp))
 
-            // Danh sách các nút đáp án trắc nghiệm
-            options.forEach { option ->
-                val buttonColor = when {
-                    !isAnswered -> ButtonDefaults.buttonColors()
-                    option == currentWord.meaning -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    option == selectedAnswer -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    else -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        options.forEach { option ->
+            val isCorrect = option == currentWord.meaning
+            val isSelected = option == selectedAnswer
 
-                Button(
-                    onClick = {
-                        if (!isAnswered) {
-                            selectedAnswer = option
-                            isAnswered = true
-                            if (option == currentWord.meaning) score++
-                        }
+            Button(
+                onClick = { if (!isAnswered) { selectedAnswer = option; isAnswered = true } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = when {
+                        !isAnswered -> Color.White
+                        isCorrect -> LimeGreen
+                        isSelected -> Color(0xFFFF5252)
+                        else -> Color(0xFFF0F0F0)
                     },
-                    colors = buttonColor,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) {
-                    Text(option, fontSize = 18.sp)
-                }
+                    contentColor = Color.Black
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(option, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(8.dp))
             }
         }
 
-        // Điều hướng câu trắc nghiệm tiếp theo
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-            Text("Điểm số hiện tại: $score/${words.size}", fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (isAnswered) {
-                Button(
-                    onClick = {
-                        if (currentIndex < words.size - 1) {
-                            currentIndex++
-                            isAnswered = false
-                            selectedAnswer = ""
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(if (currentIndex == words.size - 1) "Hoàn thành bài học!" else "Tiếp tục")
-                }
-            }
+        if (isAnswered) {
+            Button(
+                onClick = { if (currentIndex < words.size - 1) { currentIndex++; isAnswered = false; selectedAnswer = "" } },
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
+            ) { Text("TIẾP THEO", fontWeight = FontWeight.ExtraBold) }
         }
     }
 }

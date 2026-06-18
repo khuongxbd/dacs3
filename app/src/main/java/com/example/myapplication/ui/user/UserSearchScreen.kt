@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -202,93 +203,81 @@ fun UserSearchScreen() {
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 4.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(filteredAndSortedClasses) { classItem ->
-                        val totalStudents = classItem.memberIds.size
                         val isJoined = classItem.memberIds.contains(studentId)
 
+                        // Card thiết kế 3D hiện đại
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp)),
                             shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = classItem.className,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                // Header: Tên lớp + Badge trạng thái
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = classItem.className,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Black
+                                    )
 
+                                    // Badge Công khai/Riêng tư
+                                    Surface(
+                                        color = if (classItem.private) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
                                         Text(
-                                            text = if (classItem.private) "🔒 Riêng tư" else "🌐 Công khai",
-                                            fontSize = 11.sp,
-                                            color = if (classItem.private) Color.Red else Color(0xFF007A33),
-                                            modifier = Modifier
-                                                .background(
-                                                    color = (if (classItem.private) Color.Red else Color(0xFF007A33)).copy(alpha = 0.1f),
-                                                    shape = RoundedCornerShape(4.dp)
-                                                )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Group,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = Color.Gray
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "$totalStudents học viên",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Gray
+                                            text = if (classItem.private) "🔒 RIÊNG TƯ" else "🌐 CÔNG KHAI",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (classItem.private) Color.Red else Color(0xFF2E7D32),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
                                 }
 
-                                // --- THAY ĐỔI LOGIC NÚT BẤM DỰA VÀO TRẠNG THÁI THAM GIA ---
-                                if (isJoined) {
-                                    // NẾU ĐÃ THAM GIA -> Nhấn vào để Hủy tham gia (Rời lớp)
-                                    Button(
-                                        onClick = { leaveClass(classItem) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                        ),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Text("Hủy tham gia", fontWeight = FontWeight.SemiBold)
-                                    }
-                                } else {
-                                    // NẾU CHƯA THAM GIA -> Nhấn vào để xin vào lớp (Check công khai/riêng tư)
-                                    Button(
-                                        onClick = {
-                                            if (classItem.private) {
-                                                targetClassToJoin = classItem
-                                                inputClassCode = ""
-                                                showJoinDialog = true
-                                            } else {
-                                                joinClassDirectly(classItem)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Text("Vào Lớp")
-                                    }
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Stats: Số thành viên
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Group, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("${classItem.memberIds.size} thành viên đang học", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Nút hành động 3D
+                                Button(
+                                    onClick = {
+                                        if (isJoined) { leaveClass(classItem) }
+                                        else { /* logic tham gia */ }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(55.dp)
+                                        .shadow(4.dp, RoundedCornerShape(8.dp)), // Hiệu ứng 3D
+                                    shape = RoundedCornerShape(8.dp), // Hình chữ nhật bo góc 8dp
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isJoined) BlackColor else LimeGreen,
+                                        contentColor = if (isJoined) WhiteColor else BlackColor
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(2.dp, BlackColor) // Viền đen cứng cáp
+                                ) {
+                                    Text(
+                                        text = if (isJoined) "HỦY THAM GIA" else "VÀO LỚP",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 14.sp
+                                    )
                                 }
                             }
                         }

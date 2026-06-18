@@ -1,7 +1,9 @@
 package com.example.myapplication.ui.user
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,9 +13,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +28,8 @@ import com.example.myapplication.data.model.FlashcardSet
 import com.example.myapplication.data.model.ClassQuiz
 import com.example.myapplication.data.model.User
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +45,7 @@ fun ClassDetailScreen(
     val context = LocalContext.current
 
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Từ vựng 📚", "Kiểm tra 📝", "Thành viên 👥")
+    val tabs = listOf("Từ vựng", "Kiểm tra", "Thành viên")
 
     var classDetailState by remember { mutableStateOf<ClassModel?>(classObj) }
     var assignedVocabularies by remember { mutableStateOf(listOf<FlashcardSet>()) }
@@ -112,12 +118,22 @@ fun ClassDetailScreen(
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text(classDetailState?.className ?: classObj.className, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("Sĩ số: ${classDetailState?.memberIds?.size ?: 0} học viên", fontSize = 12.sp, color = Color.Gray)
+                        Text(
+                            text = classDetailState?.className ?: classObj.className,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            text = "Sĩ số: ${classDetailState?.memberIds?.size ?: 0} học viên",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 },
                 navigationIcon = {
@@ -125,7 +141,7 @@ fun ClassDetailScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->
@@ -133,43 +149,54 @@ fun ClassDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(horizontal = 16.dp)
         ) {
-            TabRow(selectedTabIndex = selectedTab) {
+            // TabRow tùy chỉnh viền đen
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.White,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = Color.Black,
+                        height = 4.dp // Làm dày vạch chỉ báo
+                    )
+                }
+            ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title, fontWeight = FontWeight.Medium, fontSize = 14.sp) }
+                        text = {
+                            Text(
+                                title,
+                                fontWeight = if(selectedTab == index) FontWeight.ExtraBold else FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
+                        }
                     )
                 }
             }
 
-            if (isLoading || classDetailState == null) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Nội dung chính
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color.Black
+                    )
+                } else {
                     when (selectedTab) {
                         0 -> VocabTabContent(
-                            vocabSets = assignedVocabularies,
-                            onFlashcardClick = onNavigateToFlashcard,
-                            onQuizPracticeClick = onNavigateToQuizPractice,
-                            onTypingPracticeClick = onNavigateToTypingPractice
+                            assignedVocabularies,
+                            onNavigateToFlashcard,
+                            onNavigateToQuizPractice,
+                            onNavigateToTypingPractice
                         )
-                        1 -> QuizTabContent(
-                            quizzes = classQuizzes,
-                            onQuizClick = onNavigateToClassQuiz
-                        )
-                        2 -> MembersTabContent(
-                            members = memberList,
-                            adminId = classDetailState?.adminId ?: ""
-                        )
+                        1 -> QuizTabContent(classQuizzes, onNavigateToClassQuiz)
+                        2 -> MembersTabContent(memberList, classDetailState?.adminId ?: "")
                     }
                 }
             }
@@ -187,74 +214,71 @@ fun VocabTabContent(
 ) {
     if (vocabSets.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Lớp học chưa được giao bộ từ vựng nào!", color = Color.Gray)
+            Text("Chưa có bộ từ vựng nào được giao!", fontWeight = FontWeight.Medium, color = Color.Gray)
         }
     } else {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 20.dp), // Thêm khoảng trống dưới cùng
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
             items(vocabSets) { vocabSet ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = Color.Black)
+                        .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        // Tiêu đề bộ từ vựng
                         Text(
-                            text = vocabSet.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Số lượng: ${vocabSet.words.size} từ vựng",
-                            fontSize = 13.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+                            text = vocabSet.title.uppercase(), // Chữ hoa tạo cảm giác mạnh mẽ
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(12.dp))
+                        // Thông tin phụ
+                        Surface(
+                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+                            color = Color.Black.copy(alpha = 0.05f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "Gồm ${vocabSet.words.size} từ vựng",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
 
+                        // Nhóm các nút bấm
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Button(
+                            // Hàm tạo nút bấm gọn gàng để tránh lặp code
+                            VocabActionButton(
                                 onClick = { onFlashcardClick(vocabSet.setId) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(vertical = 8.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.Style, contentDescription = null, modifier = Modifier.size(20.dp))
-                                    Text("Flashcard", fontSize = 11.sp)
-                                }
-                            }
-
-                            Button(
+                                label = "Flashcard",
+                                icon = Icons.Default.Style,
+                                containerColor = LimeGreen,
+                                modifier = Modifier.weight(1f)
+                            )
+                            VocabActionButton(
                                 onClick = { onQuizPracticeClick(vocabSet.setId) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007A33)),
-                                contentPadding = PaddingValues(vertical = 8.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.Assignment, contentDescription = null, modifier = Modifier.size(20.dp))
-                                    Text("Trắc nghiệm", fontSize = 11.sp)
-                                }
-                            }
-
-                            Button(
+                                label = "Trắc nghiệm",
+                                icon = Icons.Default.Assignment,
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+                            VocabActionButton(
                                 onClick = { onTypingPracticeClick(vocabSet.setId) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                                contentPadding = PaddingValues(vertical = 8.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.Keyboard, contentDescription = null, modifier = Modifier.size(20.dp))
-                                    Text("Gõ từ", fontSize = 11.sp)
-                                }
-                            }
+                                label = "Gõ từ",
+                                icon = Icons.Default.Keyboard,
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
@@ -263,43 +287,136 @@ fun VocabTabContent(
     }
 }
 
+// Helper Composable để các nút bấm trông đồng bộ
+@Composable
+fun VocabActionButton(
+    onClick: () -> Unit,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    containerColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            // Thêm shadow nhẹ để nút trông nổi khối hơn
+            .shadow(4.dp, RoundedCornerShape(8.dp), spotColor = Color.Black)
+            .border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = Color.Black
+        ),
+        shape = RoundedCornerShape(8.dp),
+        // Chỉnh sửa Padding để chữ không bị sát mép
+        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 4.dp),
+        // Loại bỏ elevation mặc định của Button để không bị xung đột với .shadow() tự định nghĩa
+        elevation = ButtonDefaults.buttonElevation(0.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
+}
+
 // ======================== TAB 2: DANH SÁCH BÀI KIỂM TRA TRONG LỚP ========================
-// 🌟 ĐÃ SỬA: Thay đổi (quizId: String) thành (quiz: ClassQuiz)
 @Composable
 fun QuizTabContent(quizzes: List<ClassQuiz>, onQuizClick: (quiz: ClassQuiz) -> Unit) {
     if (quizzes.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Hiện tại lớp không có bài kiểm tra nào!", color = Color.Gray)
+            Text("Hiện tại lớp không có bài kiểm tra nào!", fontWeight = FontWeight.Medium, color = Color.Gray)
         }
     } else {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val now = System.currentTimeMillis()
+        val sdf = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
+
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             items(quizzes) { quiz ->
+                val isStarted = quiz.startTime == null || now >= quiz.startTime!!
+                val isEnded = quiz.endTime != null && now > quiz.endTime!!
+                val isValidTime = isStarted && !isEnded
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            // 🚀 TRUYỀN NGUYÊN OBJECT: Đẩy toàn bộ dữ liệu đề thi ra ngoài để làm bài luôn
-                            onQuizClick(quiz)
-                        },
-                    shape = RoundedCornerShape(12.dp)
+                        .shadow(6.dp, RoundedCornerShape(16.dp), spotColor = Color.Black)
+                        .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
+                        .clickable(enabled = isValidTime) { onQuizClick(quiz) },
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(text = quiz.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                            Spacer(modifier = Modifier.height(4.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            // Tiêu đề bài thi
+                            Text(
+                                text = quiz.title,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 18.sp,
+                                color = if (isValidTime) Color.Black else Color.Gray
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Thông tin thời gian & số câu
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "${quiz.duration} phút | ${quiz.questions.size} câu hỏi", fontSize = 13.sp, color = Color.Gray)
+                                Text("${quiz.duration} phút • ${quiz.questions.size} câu", fontSize = 12.sp, color = Color.Gray)
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Badge trạng thái
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = when {
+                                    !isStarted -> Color(0xFFFFCC80) // Cam nhạt
+                                    isEnded -> Color(0xFFEF9A9A)    // Đỏ nhạt
+                                    else -> LimeGreen               // LimeGreen chủ đạo
+                                }.copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.2f))
+                            ) {
+                                Text(
+                                    text = when {
+                                        !isStarted -> "⏱️ Chưa mở"
+                                        isEnded -> "❌ Đã hết hạn"
+                                        else -> "🟢 Đang mở"
+                                    },
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+
+                        // Icon mũi tên
+                        if (isValidTime) {
+                            Box(
+                                modifier = Modifier.size(40.dp).border(2.dp, Color.Black, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = null)
+                            }
+                        }
                     }
                 }
             }
@@ -310,59 +427,76 @@ fun QuizTabContent(quizzes: List<ClassQuiz>, onQuizClick: (quiz: ClassQuiz) -> U
 // ======================== TAB 3: HIỂN THỊ THÀNH VIÊN VÀ AVATAR ========================
 @Composable
 fun MembersTabContent(members: List<User>, adminId: String) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(
+        contentPadding = PaddingValues(bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         items(members) { user ->
             val isAdmin = user.uid == adminId
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isAdmin) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Bóng đổ cứng chuẩn Neobrutalism
+                    .shadow(6.dp, RoundedCornerShape(16.dp), spotColor = Color.Black)
+                    .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Avatar với viền đen
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
+                            .size(50.dp)
+                            .background(if (isAdmin) LimeGreen else Color(0xFFEEEEEE), CircleShape)
+                            .border(2.dp, Color.Black, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = user.name.take(1).uppercase(),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 16.sp
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black,
+                            fontSize = 20.sp
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                    Column {
+                    // Thông tin thành viên
+                    Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = user.name,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyLarge
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp
                             )
                             if (isAdmin) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Giáo viên ⭐",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFFD4AF37),
-                                    modifier = Modifier
-                                        .background(Color(0xFFD4AF37).copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                // Badge Admin màu LimeGreen nổi bật
+                                Surface(
+                                    color = LimeGreen,
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = BorderStroke(1.dp, Color.Black)
+                                ) {
+                                    Text(
+                                        text = "ADMIN",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
-                        Text(text = user.email, fontSize = 12.sp, color = Color.Gray)
+                        Text(
+                            text = user.email,
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

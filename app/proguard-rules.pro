@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Bỏ qua lỗi kiểm tra MethodHandle liên quan đến CleanerUtil của Apache POI
+-dontwarn org.apache.poi.poifs.nio.CleanerUtil
+-dontwarn java.lang.invoke.MethodHandle
+-dontwarn java.lang.invoke.MethodHandles$Lookup
+
+# Chặn thêm các cảnh báo diện rộng khác của bộ thư viện POI khi biên dịch
+-dontwarn org.apache.poi.**
+-dontwarn java.lang.invoke.**
