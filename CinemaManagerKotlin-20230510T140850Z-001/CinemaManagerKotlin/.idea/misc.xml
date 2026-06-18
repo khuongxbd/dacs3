@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/DangTin/Tincoder Source Code/Android Java/CinemaManagerJava/app/src/main/res/layout/activity_splash.xml" value="0.19739583333333333" />
+        <entry key="..\:/DangTin/Tincoder Source Code/Android Kotlin/CinemaManagerKotlin/app/src/main/res/layout/item_seat.xml" value="0.3546875" />
+      </map>
+    </option>
+  </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="ms-17" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>
