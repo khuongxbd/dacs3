@@ -40,11 +40,7 @@ data class FlashcardSet(
 data class WordItem(
     val word: String = "",
     val meaning: String = "",
-<<<<<<< HEAD
     val imageUrl: String = ""
-=======
-    val imageUrl: String = "" // Thêm trường link ảnh minh họa cho từ vựng sang trọng hơn
->>>>>>> d415b274fde0a734c2fda544671c34c1b8ef3ec4
 )
 
 // ĐỐI TƯỢNG BÀI KIỂM TRA TRONG LỚP
@@ -67,7 +63,6 @@ data class QuizQuestion(
     val optionD: String = "",
     val correctOption: String = "",
     val explanation: String = "",
-<<<<<<< HEAD
     val imageUrl: String = ""
 )
 
@@ -94,9 +89,6 @@ data class WrongQuestionSnapshot(
     val correctOption: String = "",  // Đáp án đúng (A, B, C hoặc D)
     val userSelected: String = "",   // Đáp án mà học sinh đã chọn sai
     val explanation: String = ""     // Giải thích đáp án
-=======
-    val imageUrl: String = "" // Thêm dòng này để hỗ trợ đính kèm hình ảnh
->>>>>>> d415b274fde0a734c2fda544671c34c1b8ef3ec4
 )
 
 // ĐỐI TƯỢNG THÔNG BÁO

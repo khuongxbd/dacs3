@@ -41,17 +41,9 @@ fun AdminClassScreen(onLogoutSuccess: () -> Unit) {
     var currentView by remember { mutableStateOf("list") }
     var selectedClass by remember { mutableStateOf<ClassModel?>(null) }
 
-<<<<<<< HEAD
     var showCreateDialog by remember { mutableStateOf(false) }
     var className by remember { mutableStateOf("") }
 
-=======
-    // Các trạng thái phục vụ Dialog Tạo lớp mới
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var className by remember { mutableStateOf("") }
-
-    // Đổi trạng thái này thành Nullable String để quản lý code thông minh
->>>>>>> d415b274fde0a734c2fda544671c34c1b8ef3ec4
     var classCode by remember { mutableStateOf<String?>(null) }
     var isPrivateClass by remember { mutableStateOf(false) }
 
@@ -147,10 +139,6 @@ fun AdminClassScreen(onLogoutSuccess: () -> Unit) {
                                 }
 
                                 Row {
-<<<<<<< HEAD
-=======
-                                    // Đọc trực tiếp biến .private từ Model
->>>>>>> d415b274fde0a734c2fda544671c34c1b8ef3ec4
                                     if (itemClass.private && !itemClass.code.isNullOrBlank()) {
                                         IconButton(onClick = {
                                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
