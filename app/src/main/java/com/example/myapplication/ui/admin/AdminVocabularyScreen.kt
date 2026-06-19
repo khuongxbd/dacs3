@@ -1,13 +1,16 @@
 package com.example.myapplication.ui.admin
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -18,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -77,15 +81,24 @@ fun AdminVocabularyScreen() {
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Kho Từ Vựng Gốc (Admin)") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("KHO TỪ VỰNG", fontWeight = FontWeight.Black) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BlackColor, titleContentColor = WhiteColor)
+            )
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                text = { Text("Tạo Học Phần") },
-                icon = { Icon(Icons.Default.Add, "Add") },
+                text = { Text("TẠO HỌC PHẦN", fontWeight = FontWeight.ExtraBold) },
+                icon = { Icon(Icons.Default.Add, null) },
                 onClick = {
                     setTitle = ""; tempWords.clear(); editingWordIndex = -1
                     showCreateDialog = true
-                }
+                },
+                containerColor = LimeGreen,
+                contentColor = BlackColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor)
             )
         }
     ) { paddingValues ->
@@ -98,16 +111,14 @@ fun AdminVocabularyScreen() {
                 Text("Kho trống. Nhấn nút dưới góc để thêm bộ từ vựng!", color = Color.Gray)
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(vocabLists) { vocabSet ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .shadow(4.dp, RoundedCornerShape(8.dp))
+                            .border(2.dp, BlackColor, RoundedCornerShape(8.dp))
                             .clickable {
-                                // KHI NHẤN VÀO ITEM: Đổ dữ liệu cũ vào các State để tiến hành SỬA
                                 targetSetForEdit = vocabSet
                                 setTitle = vocabSet.title
                                 tempWords.clear()
@@ -116,16 +127,14 @@ fun AdminVocabularyScreen() {
                                 inputWord = ""; inputMeaning = ""; inputImgUrl = ""
                                 showEditDialog = true
                             },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        colors = CardDefaults.cardColors(containerColor = WhiteColor),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Row(modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(vocabSet.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text("Số lượng: ${vocabSet.words.size} từ vựng", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Text(vocabSet.title, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                                Text("Số từ: ${vocabSet.words.size}", fontWeight = FontWeight.Bold, color = Color.Gray)
                                 if (vocabSet.assignedClassIds.isNotEmpty()) {
                                     Text("📢 Đang giao cho ${vocabSet.assignedClassIds.size} lớp học", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                                 }
@@ -135,16 +144,12 @@ fun AdminVocabularyScreen() {
                                 IconButton(onClick = {
                                     targetSetForAssign = vocabSet
                                     showAssignDialog = true
-                                }) {
-                                    Icon(Icons.Default.Send, contentDescription = "Giao", tint = MaterialTheme.colorScheme.secondary)
-                                }
+                                }) { Icon(Icons.Default.Send, null, tint = LimeGreen) }
 
                                 IconButton(onClick = {
                                     db.collection("vocabularies").document(vocabSet.setId).delete()
                                         .addOnSuccessListener { Toast.makeText(context, "Đã xóa học phần", Toast.LENGTH_SHORT).show() }
-                                }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = MaterialTheme.colorScheme.error)
-                                }
+                                }) { Icon(Icons.Default.Delete, null, tint = Color.Red) }
                             }
                         }
                     }
@@ -154,24 +159,44 @@ fun AdminVocabularyScreen() {
 
         // --- HÀM COMPOSABLE REUSE CHO FORM CHỨA DANH SÁCH TỪ TẠM THỜI (DÙNG CHUNG CHO CẢ CREATE & EDIT) ---
         @Composable
-        fun VocabularyFormContent(isEditMode: Boolean) {
+        fun VocabularyFormContent() {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedTextField(value = setTitle, onValueChange = { setTitle = it }, label = { Text("Tên chủ đề học phần") }, modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(if (editingWordIndex == -1) "Thêm từ vựng mới:" else "Đang sửa từ vựng:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-                OutlinedTextField(value = inputWord, onValueChange = { inputWord = it }, label = { Text("Từ tiếng Anh") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = inputMeaning, onValueChange = { inputMeaning = it }, label = { Text("Nghĩa tiếng Việt") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = inputImgUrl, onValueChange = { inputImgUrl = it }, label = { Text("Link ảnh minh họa") }, modifier = Modifier.fillMaxWidth())
+                // Tên học phần
+                OutlinedTextField(
+                    value = setTitle,
+                    onValueChange = { setTitle = it },
+                    label = { Text("Tên chủ đề học phần") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BlackColor,
+                        unfocusedBorderColor = BlackColor,
+                        focusedLabelColor = BlackColor
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    if (editingWordIndex != -1) {
-                        TextButton(onClick = { editingWordIndex = -1; inputWord = ""; inputMeaning = ""; inputImgUrl = "" }) { Text("Hủy sửa từ") }
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Button(onClick = {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Phần nhập từ vựng
+                Text(
+                    text = if (editingWordIndex == -1) "THÊM TỪ VỰNG MỚI:" else "ĐANG SỬA TỪ:",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp,
+                    color = BlackColor
+                )
+
+                OutlinedTextField(value = inputWord, onValueChange = { inputWord = it }, label = { Text("Từ tiếng Anh") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BlackColor, unfocusedBorderColor = BlackColor), shape = RoundedCornerShape(8.dp))
+                OutlinedTextField(value = inputMeaning, onValueChange = { inputMeaning = it }, label = { Text("Nghĩa tiếng Việt") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BlackColor, unfocusedBorderColor = BlackColor), shape = RoundedCornerShape(8.dp))
+                OutlinedTextField(value = inputImgUrl, onValueChange = { inputImgUrl = it }, label = { Text("Link ảnh minh họa") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BlackColor, unfocusedBorderColor = BlackColor), shape = RoundedCornerShape(8.dp))
+
+                // Nút Thêm/Cập nhật
+                Button(
+                    onClick = {
                         if (inputWord.isBlank() || inputMeaning.isBlank()) return@Button
                         if (editingWordIndex == -1) {
                             tempWords.add(WordItem(word = inputWord, meaning = inputMeaning, imageUrl = inputImgUrl))
@@ -180,19 +205,29 @@ fun AdminVocabularyScreen() {
                             editingWordIndex = -1
                         }
                         inputWord = ""; inputMeaning = ""; inputImgUrl = ""
-                    }) { Text(if (editingWordIndex == -1) "Thêm vào bộ" else "Cập nhật từ") }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp).border(2.dp, BlackColor),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = BlackColor)
+                ) {
+                    Text(if (editingWordIndex == -1) "THÊM VÀO BỘ" else "CẬP NHẬT TỪ", fontWeight = FontWeight.ExtraBold)
                 }
 
-                Text("Danh sách từ hiện tại (${tempWords.size}):", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.DarkGray)
+                // Danh sách từ
+                Text("DANH SÁCH TỪ HIỆN TẠI (${tempWords.size}):", fontWeight = FontWeight.Black, fontSize = 14.sp, color = BlackColor)
+
                 tempWords.forEachIndexed { index, item ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        colors = CardDefaults.cardColors(containerColor = if(editingWordIndex == index) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                        modifier = Modifier.fillMaxWidth().border(2.dp, BlackColor, RoundedCornerShape(8.dp)),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (editingWordIndex == index) LimeGreen.copy(alpha = 0.2f) else WhiteColor
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Row(modifier = Modifier.padding(12.dp, 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("${index + 1}. ${item.word}", fontWeight = FontWeight.Bold)
-                                Text("Nghĩa: ${item.meaning}", fontSize = 13.sp, color = Color.Gray)
+                                Text("${index + 1}. ${item.word}", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                                Text("Nghĩa: ${item.meaning}", fontSize = 13.sp, color = Color.DarkGray)
                             }
                             Row {
                                 IconButton(onClick = {
@@ -200,11 +235,12 @@ fun AdminVocabularyScreen() {
                                     inputWord = item.word
                                     inputMeaning = item.meaning
                                     inputImgUrl = item.imageUrl
-                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, "Sửa", tint = MaterialTheme.colorScheme.primary) }
+                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, "Sửa", tint = BlackColor) }
+
                                 IconButton(onClick = {
                                     tempWords.removeAt(index)
-                                    if(editingWordIndex == index) editingWordIndex = -1
-                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Delete, "Xóa", tint = MaterialTheme.colorScheme.error) }
+                                    if (editingWordIndex == index) editingWordIndex = -1
+                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Delete, "Xóa", tint = Color.Red) }
                             }
                         }
                     }
@@ -216,18 +252,55 @@ fun AdminVocabularyScreen() {
         if (showCreateDialog) {
             AlertDialog(
                 onDismissRequest = { showCreateDialog = false },
-                title = { Text("Tạo Học Phần Mới") },
-                text = { VocabularyFormContent(isEditMode = false) },
-                confirmButton = {
-                    Button(onClick = {
-                        if (setTitle.isBlank() || tempWords.isEmpty()) return@Button
-                        val setId = UUID.randomUUID().toString()
-                        val newSet = FlashcardSet(setId = setId, title = setTitle, words = tempWords.toList(), adminId = adminId)
-                        db.collection("vocabularies").document(setId).set(newSet)
-                            .addOnSuccessListener { showCreateDialog = false; Toast.makeText(context, "Tạo thành công!", Toast.LENGTH_SHORT).show() }
-                    }) { Text("Lưu Lên Hệ Thống") }
+                containerColor = WhiteColor, // Đảm bảo nền trắng
+                shape = RoundedCornerShape(8.dp), // Bo góc vuông vức
+                modifier = Modifier.border(2.dp, BlackColor), // Viền đen 2dp đặc trưng
+                title = {
+                    Text(
+                        "TẠO HỌC PHẦN MỚI",
+                        fontWeight = FontWeight.Black,
+                        color = BlackColor
+                    )
                 },
-                dismissButton = { TextButton(onClick = { showCreateDialog = false }) { Text("Hủy") } }
+                text = {
+                    VocabularyFormContent()
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (setTitle.isBlank() || tempWords.isEmpty()) return@Button
+                            val setId = UUID.randomUUID().toString()
+                            val newSet = FlashcardSet(
+                                setId = setId,
+                                title = setTitle,
+                                words = tempWords.toList(),
+                                adminId = adminId
+                            )
+
+                            db.collection("vocabularies").document(setId).set(newSet)
+                                .addOnSuccessListener {
+                                    showCreateDialog = false
+                                    Toast.makeText(context, "Tạo thành công!", Toast.LENGTH_SHORT).show()
+                                }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BlackColor,
+                            contentColor = WhiteColor
+                        ),
+                        border = BorderStroke(2.dp, BlackColor)
+                    ) {
+                        Text("LƯU HỌC PHẦN", fontWeight = FontWeight.ExtraBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showCreateDialog = false },
+                        colors = ButtonDefaults.textButtonColors(contentColor = BlackColor)
+                    ) {
+                        Text("HỦY", fontWeight = FontWeight.Bold)
+                    }
+                }
             )
         }
 
@@ -235,32 +308,57 @@ fun AdminVocabularyScreen() {
         if (showEditDialog && targetSetForEdit != null) {
             AlertDialog(
                 onDismissRequest = { showEditDialog = false; targetSetForEdit = null },
-                title = { Text("Chỉnh Sửa Học Phần") },
-                text = { VocabularyFormContent(isEditMode = true) },
+                containerColor = WhiteColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor),
+                title = {
+                    Text(
+                        "CHỈNH SỬA HỌC PHẦN",
+                        fontWeight = FontWeight.Black,
+                        color = BlackColor
+                    )
+                },
+                text = {
+                    VocabularyFormContent()
+                },
                 confirmButton = {
                     Button(
-                        enabled = editingWordIndex == -1, // Đang sửa từ con thì bắt cập nhật từ trước khi lưu tổng
+                        enabled = editingWordIndex == -1, // Chỉ cho phép lưu khi không ở trạng thái đang sửa từ con
                         onClick = {
                             if (setTitle.isBlank() || tempWords.isEmpty()) return@Button
 
-                            // Tiến hành cập nhật đè (Update) dữ liệu mới lên Document cũ trên Firestore
                             val updatedSet = targetSetForEdit!!.copy(
                                 title = setTitle,
                                 words = tempWords.toList()
                             )
 
                             db.collection("vocabularies").document(targetSetForEdit!!.setId)
-                                .set(updatedSet) // set() đè đối tượng đã copy dữ liệu mới
+                                .set(updatedSet)
                                 .addOnSuccessListener {
                                     showEditDialog = false
                                     targetSetForEdit = null
-                                    Toast.makeText(context, "Đã cập nhật thay đổi thành công!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Đã cập nhật thành công!", Toast.LENGTH_SHORT).show()
                                 }
-                        }
-                    ) { Text("Cập Nhật Học Phần") }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BlackColor,
+                            contentColor = WhiteColor,
+                            disabledContainerColor = Color.Gray, // Màu xám khi disabled
+                            disabledContentColor = Color.LightGray
+                        ),
+                        border = BorderStroke(2.dp, BlackColor)
+                    ) {
+                        Text("CẬP NHẬT HỌC PHẦN", fontWeight = FontWeight.ExtraBold)
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showEditDialog = false; targetSetForEdit = null }) { Text("Hủy") }
+                    TextButton(
+                        onClick = { showEditDialog = false; targetSetForEdit = null },
+                        colors = ButtonDefaults.textButtonColors(contentColor = BlackColor)
+                    ) {
+                        Text("HỦY", fontWeight = FontWeight.Bold)
+                    }
                 }
             )
         }
@@ -268,32 +366,67 @@ fun AdminVocabularyScreen() {
         // --- DIALOG 3: GỬI HỌC PHẦN VÀO LỚP ---
         if (showAssignDialog && targetSetForAssign != null) {
             AlertDialog(
-                onDismissRequest = { showAssignDialog = false },
-                title = { Text("Gửi Học Phần Vào Lớp") },
+                onDismissRequest = { showAssignDialog = false; targetSetForAssign = null },
+                containerColor = WhiteColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor),
+                title = {
+                    Text("GỬI BỘ TỪ VỰNG", fontWeight = FontWeight.Black, color = BlackColor)
+                },
                 text = {
                     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Chọn lớp học nhận bộ từ vựng:", fontSize = 14.sp)
-                        LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                        Text("Chọn các lớp học để áp dụng học phần này:", fontSize = 14.sp)
+
+                        // LazyColumn hiển thị danh sách lớp với Checkbox tùy chỉnh
+                        LazyColumn(
+                            modifier = Modifier
+                                .heightIn(max = 250.dp)
+                                .border(1.dp, BlackColor, RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
                             items(myClasses) { classItem ->
                                 val isAssigned = targetSetForAssign!!.assignedClassIds.contains(classItem.classId)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        val currentList = targetSetForAssign!!.assignedClassIds.toMutableList()
-                                        if (isAssigned) currentList.remove(classItem.classId) else currentList.add(classItem.classId)
-                                        db.collection("vocabularies").document(targetSetForAssign!!.setId).update("assignedClassIds", currentList)
-                                            .addOnSuccessListener { targetSetForAssign = targetSetForAssign!!.copy(assignedClassIds = currentList) }
-                                    }.padding(vertical = 6.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val currentList = targetSetForAssign!!.assignedClassIds.toMutableList()
+                                            if (isAssigned) currentList.remove(classItem.classId) else currentList.add(classItem.classId)
+                                            db.collection("vocabularies").document(targetSetForAssign!!.setId)
+                                                .update("assignedClassIds", currentList)
+                                                .addOnSuccessListener {
+                                                    targetSetForAssign = targetSetForAssign!!.copy(assignedClassIds = currentList)
+                                                }
+                                        }
+                                        .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Checkbox(checked = isAssigned, onCheckedChange = null)
+                                    Checkbox(
+                                        checked = isAssigned,
+                                        onCheckedChange = null, // Đã xử lý tại Row click
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = LimeGreen,
+                                            uncheckedColor = BlackColor,
+                                            checkmarkColor = BlackColor
+                                        )
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(classItem.className)
+                                    Text(classItem.className, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                     }
                 },
-                confirmButton = { Button(onClick = { showAssignDialog = false; targetSetForAssign = null }) { Text("Xong") } }
+                confirmButton = {
+                    Button(
+                        onClick = { showAssignDialog = false; targetSetForAssign = null },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = BlackColor),
+                        border = BorderStroke(2.dp, BlackColor)
+                    ) {
+                        Text("XONG", fontWeight = FontWeight.ExtraBold)
+                    }
+                }
             )
         }
     }

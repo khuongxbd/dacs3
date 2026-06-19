@@ -4,7 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -74,98 +78,80 @@ fun AdminClassScreen(onLogoutSuccess: () -> Unit) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Lớp Học Quản Lý") },
+                    title = { Text("QUẢN LÝ LỚP HỌC", fontWeight = FontWeight.Black) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BlackColor, titleContentColor = WhiteColor),
                     actions = {
-                        IconButton(onClick = {
-                            FirebaseRepository().logout()
-                            onLogoutSuccess()
-                        }) {
-                            Icon(Icons.Default.ExitToApp, contentDescription = "Thoát", tint = MaterialTheme.colorScheme.error)
+                        IconButton(onClick = { FirebaseRepository().logout(); onLogoutSuccess() }) {
+                            Icon(Icons.Default.ExitToApp, contentDescription = "Thoát", tint = WhiteColor)
                         }
                     }
                 )
             },
             floatingActionButton = {
                 ExtendedFloatingActionButton(
-                    text = { Text("Tạo Lớp") },
-                    icon = { Icon(Icons.Default.Add, contentDescription = "Tạo") },
-                    onClick = { showCreateDialog = true }
+                    text = { Text("TẠO LỚP", fontWeight = FontWeight.ExtraBold) },
+                    icon = { Icon(Icons.Default.Add, null) },
+                    onClick = { showCreateDialog = true },
+                    containerColor = LimeGreen,
+                    contentColor = BlackColor,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.border(2.dp, BlackColor)
                 )
             }
         ) { paddingValues ->
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (classList.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    Text("Danh sách trống. Hãy nhấn nút Tạo Lớp dưới góc màn hình!", color = Color.Gray)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(classList) { itemClass ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedClass = itemClass
-                                    currentView = "detail"
-                                },
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                    Box(
-                                        modifier = Modifier.size(45.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(itemClass.avatarUrl.ifBlank { "📚" }, fontSize = 22.sp)
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(itemClass.className, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        Text(
-                                            text = "Sĩ số: ${itemClass.memberIds.size}/${if (itemClass.maxMembers == -1) "Không giới hạn" else itemClass.maxMembers}",
-                                            style = MaterialTheme.typography.bodySmall, color = Color.Gray
-                                        )
-                                    }
-                                }
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(classList) { itemClass ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(4.dp, RoundedCornerShape(8.dp))
+                            .border(2.dp, BlackColor, RoundedCornerShape(8.dp))
+                            .clickable { selectedClass = itemClass; currentView = "detail" },
+                        colors = CardDefaults.cardColors(containerColor = WhiteColor),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(50.dp).background(LimeGreen.copy(alpha = 0.2f), RoundedCornerShape(8.dp)).border(2.dp, BlackColor, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Text(itemClass.avatarUrl, fontSize = 24.sp)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(itemClass.className, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                                Text("Sĩ số: ${itemClass.memberIds.size}", fontWeight = FontWeight.Bold, color = Color.Gray)
+                            }
 
-                                Row {
-                                    if (itemClass.private && !itemClass.code.isNullOrBlank()) {
-                                        IconButton(onClick = {
-                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                            val clip = ClipData.newPlainText("Code", itemClass.code)
-                                            clipboard.setPrimaryClip(clip)
-                                            Toast.makeText(context, "Đã sao chép mã: ${itemClass.code}", Toast.LENGTH_SHORT).show()
-                                        }) { Icon(Icons.Default.Share, "Copy", tint = MaterialTheme.colorScheme.primary) }
+                            if (itemClass.private && !itemClass.code.isNullOrBlank()) {
+                                IconButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("Code", itemClass.code)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "Đã sao chép mã: ${itemClass.code}", Toast.LENGTH_SHORT).show()
                                     }
-                                    IconButton(onClick = {
-                                        db.collection("classes").document(itemClass.classId).delete()
-                                    }) { Icon(Icons.Default.Delete, "Xóa", tint = MaterialTheme.colorScheme.error) }
+                                ) {
+                                    Icon(Icons.Default.Share, contentDescription = "Copy", tint = LimeGreen)
                                 }
+                            }
+
+                            // Icon hành động
+                            IconButton(onClick = { db.collection("classes").document(itemClass.classId).delete() }) {
+                                Icon(Icons.Default.Delete, null, tint = Color.Red)
                             }
                         }
                     }
                 }
             }
+        }
 
-            if (showCreateDialog) {
-                AlertDialog(
-                    onDismissRequest = { showCreateDialog = false },
-                    title = { Text("Cấu Hình Tạo Lớp Học") },
-                    text = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
+        if (showCreateDialog) {
+            AlertDialog(
+                onDismissRequest = { showCreateDialog = false },
+                containerColor = WhiteColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor),
+                title = { Text("TẠO LỚP HỌC MỚI", fontWeight = FontWeight.Black) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text("Chọn ảnh đại diện lớp:", fontSize = 14.sp)
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 items(avatars) { avatar ->
@@ -179,13 +165,17 @@ fun AdminClassScreen(onLogoutSuccess: () -> Unit) {
                                 }
                             }
 
-                            OutlinedTextField(value = className, onValueChange = { className = it }, label = { Text("Tên lớp học") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(value = className,
+                                onValueChange = { className = it },
+                                label = { Text("Tên lớp học") },
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BlackColor,
+                                    unfocusedBorderColor = BlackColor),
+                                    modifier = Modifier.fillMaxWidth())
 
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                                 Text("Lớp riêng tư (Hạn chế công khai)")
                                 Switch(checked = isPrivateClass, onCheckedChange = {
                                     isPrivateClass = it
-                                    // NẾU BẬT PRIVATE THÌ SINH MÃ, NẾU TẮT THÌ CHO THÀNH NULL LUÔN THEO Ý KHƯƠNG
                                     classCode = if (it) UUID.randomUUID().toString().take(6).uppercase() else null
                                 })
                             }
@@ -213,24 +203,42 @@ fun AdminClassScreen(onLogoutSuccess: () -> Unit) {
                             if (className.isBlank()) return@Button
                             val classId = UUID.randomUUID().toString()
                             val limit = if (isUnlimitedMembers) -1 else (maxMembersText.toIntOrNull() ?: 50)
+                            val initialMembers = listOf(adminId)
 
                             val newClass = ClassModel(
                                 classId = classId,
                                 className = className,
-                                code = classCode, // Sẽ truyền chuỗi code hoặc null thẳng lên Firestore
+                                code = classCode,
                                 adminId = adminId,
-                                private = isPrivateClass, // Map chuẩn đét với biến private mới
+                                private = isPrivateClass,
                                 avatarUrl = selectedAvatar,
-                                maxMembers = limit
+                                maxMembers = limit,
+                                memberIds = initialMembers
                             )
                             db.collection("classes").document(classId).set(newClass)
+                                .addOnSuccessListener {
+                                    Toast.makeText(context, "Đã tạo lớp thành công!", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(context, "Lỗi khi tạo lớp", Toast.LENGTH_SHORT).show()
+                                }
+
+                            // Reset trạng thái
                             showCreateDialog = false
-                            className = ""; isPrivateClass = false; classCode = null; isUnlimitedMembers = true
-                        }) { Text("Xác Nhận Tạo") }
+                            className = ""
+                            isPrivateClass = false
+                            classCode = null
+                            isUnlimitedMembers = true
+                            selectedAvatar = "📚"
+                        },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = BlackColor),
+                            border = BorderStroke(2.dp, BlackColor)
+                        )
+                        { Text("XÁC NHẬN", fontWeight = FontWeight.ExtraBold) }
                     },
-                    dismissButton = { TextButton(onClick = { showCreateDialog = false }) { Text("Hủy") } }
-                )
-            }
+                dismissButton = { TextButton(onClick = { showCreateDialog = false }) { Text("Hủy") } }
+            )
         }
     }
 }

@@ -4,12 +4,15 @@ import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -23,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -124,16 +128,25 @@ fun AdminQuizScreen() {
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Kho Đề Kiểm Tra (Admin)") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("KHO ĐỀ KIỂM TRA", fontWeight = FontWeight.Black) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BlackColor, titleContentColor = WhiteColor)
+            )
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                text = { Text("Tạo Bài Kiểm Tra") },
-                icon = { Icon(Icons.Default.Add, "Add") },
+                text = { Text("TẠO BÀI KIỂM TRA", fontWeight = FontWeight.ExtraBold) },
+                icon = { Icon(Icons.Default.Add, null) },
                 onClick = {
                     quizTitle = ""; quizDuration = "15"; tempQuestions.clear(); editingQuestionIndex = -1
                     qText = ""; opA = ""; opB = ""; opC = ""; opD = ""; qImgUrl = ""; qExplanation = ""
                     showCreateDialog = true
-                }
+                },
+                containerColor = LimeGreen,
+                contentColor = BlackColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor)
             )
         }
     ) { paddingValues ->
@@ -152,12 +165,14 @@ fun AdminQuizScreen() {
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(quizLists) { quiz ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .shadow(4.dp, RoundedCornerShape(8.dp))
+                            .border(2.dp, BlackColor, RoundedCornerShape(8.dp))
                             .clickable {
                                 targetQuizForEdit = quiz
                                 quizTitle = quiz.title
@@ -168,7 +183,8 @@ fun AdminQuizScreen() {
                                 qText = ""; opA = ""; opB = ""; opC = ""; opD = ""; qImgUrl = ""; qExplanation = ""
                                 showEditDialog = true
                             },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        colors = CardDefaults.cardColors(containerColor = WhiteColor),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
@@ -176,12 +192,16 @@ fun AdminQuizScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(quiz.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text("Thời lượng: ${quiz.duration} phút | Số câu hỏi: ${quiz.questions.size} câu", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Text(quiz.title, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                                Text(
+                                    "Thời lượng: ${quiz.duration} phút | ${quiz.questions.size} câu",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Gray
+                                )
                             }
                             Row {
                                 IconButton(onClick = { targetQuizForAssign = quiz; showAssignDialog = true }) {
-                                    Icon(Icons.Default.Send, "Giao đề", tint = MaterialTheme.colorScheme.secondary)
+                                    Icon(Icons.Default.Send, "Giao đề", tint = LimeGreen) // Màu xanh lá mạ nổi bật
                                 }
                                 IconButton(onClick = {
                                     val quizIdToDelete = quiz.quizId
@@ -201,7 +221,7 @@ fun AdminQuizScreen() {
                                             Toast.makeText(context, "Lỗi khi xóa đề: ${e.message}", Toast.LENGTH_LONG).show()
                                         }
                                 }) {
-                                    Icon(Icons.Default.Delete, "Xóa", tint = MaterialTheme.colorScheme.error)
+                                    Icon(Icons.Default.Delete, "Xóa", tint = Color.Red) // Màu đỏ cảnh báo
                                 }
                             }
                         }
@@ -218,36 +238,44 @@ fun AdminQuizScreen() {
 
             AlertDialog(
                 onDismissRequest = { showCreateDialog = false },
-                title = { Text("Tạo Bài Kiểm Tra Mới") },
+                containerColor = WhiteColor,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.border(2.dp, BlackColor),
+                title = { Text("TẠO BÀI KIỂM TRA MỚI", fontWeight = FontWeight.Black) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Style nút đặt thời hạn theo phong cách 3D
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().border(1.dp, BlackColor, RoundedCornerShape(8.dp)).padding(8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Thời hạn làm bài:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Thời hạn làm bài:", fontWeight = FontWeight.Bold)
                             Button(
                                 onClick = { showTimePickerPopup = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                                shape = RoundedCornerShape(4.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = BlackColor),
+                                border = BorderStroke(1.dp, BlackColor)
                             ) {
-                                Text(if (selectedStartTime != null && selectedEndTime != null) "Đã đặt thời hạn" else "Đặt thời hạn")
+                                Text(if (selectedStartTime != null) "ĐÃ ĐẶT" else "CHỌN THỜI HẠN", fontWeight = FontWeight.ExtraBold)
                             }
                         }
 
                         if (selectedStartTime != null && selectedEndTime != null) {
                             val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
-                            Text(
-                                text = "⏱️ Từ: ${sdf.format(selectedStartTime)}\n⏱️ Đến: ${sdf.format(selectedEndTime)}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Card(modifier = Modifier.fillMaxWidth().border(1.dp, BlackColor), colors = CardDefaults.cardColors(containerColor = WhiteColor)) {
+                                Text(
+                                    text = "⏱️ Bắt đầu: ${sdf.format(selectedStartTime)}\n⏱️ Kết thúc: ${sdf.format(selectedEndTime)}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
                         }
 
                         HorizontalDivider()
 
-                        // Component nhập liệu form chính (ĐÃ FIX: Truyền đầy đủ tham số state)
-                        QuizFormContent(
+                       QuizFormContent(
                             quizTitle = quizTitle, onQuizTitleChange = { quizTitle = it },
                             quizDuration = quizDuration, onQuizDurationChange = { quizDuration = it },
                             editingQuestionIndex = editingQuestionIndex,
@@ -278,32 +306,47 @@ fun AdminQuizScreen() {
                                 if (editingQuestionIndex == idx) editingQuestionIndex = -1
                             },
                             context = context
-                        )
+                       )
                     }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        if (quizTitle.isBlank() || tempQuestions.isEmpty()) return@Button
-                        val qId = UUID.randomUUID().toString()
+                    Button(
+                        onClick = {
+                            if (quizTitle.isBlank() || tempQuestions.isEmpty()) return@Button
+                            val qId = UUID.randomUUID().toString()
 
-                        val dataMap = hashMapOf(
-                            "quizId" to qId,
-                            "classId" to "",
-                            "title" to quizTitle,
-                            "duration" to (quizDuration.toIntOrNull() ?: 15),
-                            "startTime" to selectedStartTime,
-                            "endTime" to selectedEndTime,
-                            "questions" to tempQuestions.toList(),
-                            "adminId" to adminId
-                        )
-                        db.collection("quizzes").document(qId).set(dataMap)
-                            .addOnSuccessListener {
-                                showCreateDialog = false; Toast.makeText(context, "Đã lưu đề thi thành công!", Toast.LENGTH_SHORT).show()
-                            }
-                    }) { Text("Lưu Đề") }
+                            val dataMap = hashMapOf(
+                                "quizId" to qId,
+                                "classId" to "",
+                                "title" to quizTitle,
+                                "duration" to (quizDuration.toIntOrNull() ?: 15),
+                                "startTime" to selectedStartTime,
+                                "endTime" to selectedEndTime,
+                                "questions" to tempQuestions.toList(),
+                                "adminId" to adminId
+                            )
+                            db.collection("quizzes").document(qId).set(dataMap)
+                                .addOnSuccessListener {
+                                    showCreateDialog = false
+                                    Toast.makeText(context, "Đã lưu đề thi thành công!", Toast.LENGTH_SHORT).show()
+                                }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BlackColor, contentColor = WhiteColor),
+                        border = BorderStroke(2.dp, BlackColor),
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Text("LƯU ĐỀ THI", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showCreateDialog = false }) { Text("Hủy") }
+                    TextButton(
+                        onClick = { showCreateDialog = false },
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, BlackColor)
+                    ) {
+                        Text("HỦY", fontWeight = FontWeight.Bold, color = BlackColor)
+                    }
                 }
             )
 
@@ -313,29 +356,47 @@ fun AdminQuizScreen() {
 
                 AlertDialog(
                     onDismissRequest = { showTimePickerPopup = false },
-                    title = { Text("Cấu Hình Thời Hạn Mở Đề") },
+                    containerColor = WhiteColor,
+                    modifier = Modifier.border(2.dp, BlackColor),
+                    title = {
+                        Text("CẤU HÌNH THỜI HẠN", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    },
                     text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Nhập số giờ hệ thống sẽ mở đề thi này kể từ bây giờ:", fontSize = 13.sp)
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Nhập số giờ hiệu lực:", fontWeight = FontWeight.Bold)
                             OutlinedTextField(
                                 value = durationHoursInput,
                                 onValueChange = { durationHoursInput = it },
-                                label = { Text("Số giờ hiệu lực (Ví dụ: 2, 12, 24)") },
-                                modifier = Modifier.fillMaxWidth()
+                                label = { Text("Số giờ (ví dụ: 24)") },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = BlackColor,
+                                    unfocusedBorderColor = BlackColor
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(4.dp)
                             )
                         }
                     },
                     confirmButton = {
-                        Button(onClick = {
-                            val hours = durationHoursInput.toLongOrNull() ?: 24
-                            val now = System.currentTimeMillis()
-                            selectedStartTime = now
-                            selectedEndTime = now + (hours * 60 * 60 * 1000)
-                            showTimePickerPopup = false
-                        }) { Text("Xác Nhận") }
+                        Button(
+                            onClick = {
+                                val hours = durationHoursInput.toLongOrNull() ?: 24
+                                val now = System.currentTimeMillis()
+                                selectedStartTime = now
+                                selectedEndTime = now + (hours * 60 * 60 * 1000)
+                                showTimePickerPopup = false
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = BlackColor),
+                            border = BorderStroke(2.dp, BlackColor)
+                        ) { Text("XÁC NHẬN", fontWeight = FontWeight.ExtraBold) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showTimePickerPopup = false }) { Text("Hủy") }
+                        TextButton(
+                            onClick = { showTimePickerPopup = false },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, BlackColor)
+                        ) { Text("HỦY", fontWeight = FontWeight.Bold, color = BlackColor) }
                     }
                 )
             }

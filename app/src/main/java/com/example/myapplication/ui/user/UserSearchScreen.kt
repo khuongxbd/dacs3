@@ -38,14 +38,13 @@ fun UserSearchScreen() {
     var isLoading by remember { mutableStateOf(true) }
 
     var searchQuery by remember { mutableStateOf("") }
-    var memberFilterType by remember { mutableStateOf(0) } // 0: Mặc định, 1: Nhiều thành viên, 2: Ít thành viên
+    var memberFilterType by remember { mutableStateOf(0) } // 1: Nhiều 2: Ít thành viên
     var showFilterMenu by remember { mutableStateOf(false) }
 
     var showJoinDialog by remember { mutableStateOf(false) }
     var targetClassToJoin by remember { mutableStateOf<ClassModel?>(null) }
     var inputClassCode by remember { mutableStateOf("") }
 
-    // Lấy danh sách lớp học Realtime từ Firestore
     LaunchedEffect(Unit) {
         db.collection("classes")
             .addSnapshotListener { snapshot, _ ->
@@ -56,7 +55,6 @@ fun UserSearchScreen() {
             }
     }
 
-    // Lọc theo tên và sắp xếp theo số thành viên
     val filteredAndSortedClasses = remember(allClasses, searchQuery, memberFilterType) {
         var result = allClasses.filter {
             it.className.contains(searchQuery, ignoreCase = true)
@@ -70,7 +68,6 @@ fun UserSearchScreen() {
         result
     }
 
-    // Hàm xử lý đẩy trực tiếp Member ID lên Firestore (Gia nhập lớp)
     fun joinClassDirectly(targetClass: ClassModel) {
         val currentMembers = targetClass.memberIds.toMutableList()
         if (!currentMembers.contains(studentId)) {
@@ -89,11 +86,10 @@ fun UserSearchScreen() {
         }
     }
 
-    // HÀM MỚI: Xử lý xóa Member ID khỏi Firestore (Hủy tham gia / Rời lớp)
     fun leaveClass(targetClass: ClassModel) {
         val currentMembers = targetClass.memberIds.toMutableList()
         if (currentMembers.contains(studentId)) {
-            currentMembers.remove(studentId) // Xóa ID của user hiện tại ra khỏi mảng
+            currentMembers.remove(studentId)
 
             db.collection("classes").document(targetClass.classId)
                 .update("memberIds", currentMembers)
@@ -120,7 +116,6 @@ fun UserSearchScreen() {
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            // --- CÔNG CỤ TÌM KIẾM ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +137,6 @@ fun UserSearchScreen() {
                     modifier = Modifier.weight(1f)
                 )
 
-                // NÚT BỘ LỌC THÀNH VIÊN
                 Box {
                     IconButton(
                         onClick = { showFilterMenu = !showFilterMenu },
@@ -191,7 +185,6 @@ fun UserSearchScreen() {
                 }
             }
 
-            // --- DANH SÁCH LỚP HỌC KẾT QUẢ ---
             if (isLoading) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -208,8 +201,6 @@ fun UserSearchScreen() {
                 ) {
                     items(filteredAndSortedClasses) { classItem ->
                         val isJoined = classItem.memberIds.contains(studentId)
-
-                        // Card thiết kế 3D hiện đại
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -218,7 +209,6 @@ fun UserSearchScreen() {
                             colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
-                                // Header: Tên lớp + Badge trạng thái
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -229,14 +219,12 @@ fun UserSearchScreen() {
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Black
                                     )
-
-                                    // Badge Công khai/Riêng tư
                                     Surface(
                                         color = if (classItem.private) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = if (classItem.private) "🔒 RIÊNG TƯ" else "🌐 CÔNG KHAI",
+                                            text = if (classItem.private) "RIÊNG TƯ" else "CÔNG KHAI",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (classItem.private) Color.Red else Color(0xFF2E7D32),
@@ -247,7 +235,6 @@ fun UserSearchScreen() {
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                // Stats: Số thành viên
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Group, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -256,22 +243,29 @@ fun UserSearchScreen() {
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Nút hành động 3D
                                 Button(
                                     onClick = {
                                         if (isJoined) { leaveClass(classItem) }
-                                        else { /* logic tham gia */ }
+                                        else {
+                                            if (classItem.private) {
+                                                targetClassToJoin = classItem
+                                                showJoinDialog = true
+                                                inputClassCode = ""
+                                            } else {
+                                                joinClassDirectly(classItem)
+                                            }
+                                        }
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(55.dp)
-                                        .shadow(4.dp, RoundedCornerShape(8.dp)), // Hiệu ứng 3D
-                                    shape = RoundedCornerShape(8.dp), // Hình chữ nhật bo góc 8dp
+                                        .shadow(4.dp, RoundedCornerShape(8.dp)),
+                                    shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isJoined) BlackColor else LimeGreen,
                                         contentColor = if (isJoined) WhiteColor else BlackColor
                                     ),
-                                    border = androidx.compose.foundation.BorderStroke(2.dp, BlackColor) // Viền đen cứng cáp
+                                    border = androidx.compose.foundation.BorderStroke(2.dp, BlackColor)
                                 ) {
                                     Text(
                                         text = if (isJoined) "HỦY THAM GIA" else "VÀO LỚP",
@@ -286,7 +280,6 @@ fun UserSearchScreen() {
             }
         }
 
-        // --- DIALOG CHECK MÃ CODE (CHỈ BẬT KHI LỚP LÀ PRIVATE) ---
         if (showJoinDialog && targetClassToJoin != null) {
             AlertDialog(
                 onDismissRequest = { showJoinDialog = false; targetClassToJoin = null },
