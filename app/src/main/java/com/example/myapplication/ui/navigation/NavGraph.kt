@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 // Định nghĩa các Route tĩnh cho luồng chính của hệ thống
 sealed class Screen(val route: String) {
     object Login : Screen("login")
+    object Register : Screen("register")
     object UserMain : Screen("user_main")
     object AdminMain : Screen("admin_main")
 }
@@ -18,8 +19,11 @@ fun SetupNavGraph(navController: NavHostController, startDestination: String) {
 
         // 1. Màn hình Đăng nhập / Đăng ký gốc
         composable(Screen.Login.route) {
-            // Tạm thời chưa sửa file LoginScreen của bạn, lát ta cập nhật lệnh điều hướng sau
             com.example.myapplication.ui.auth.LoginScreen(navController = navController)
+        }
+
+        composable(Screen.Register.route) {
+            com.example.myapplication.ui.auth.RegisterScreen(navController = navController)
         }
 
         // 2. Điểm đầu của luồng Giao diện Học sinh (Chứa Bottom Bar)

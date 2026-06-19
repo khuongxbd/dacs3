@@ -38,6 +38,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +59,8 @@ fun StudentQuizScreen(
         }
         return
     }
+
+    val coroutineScope = rememberCoroutineScope()
 
     // --- STATE QUẢN LÝ TRẠNG THÁI LÀM BÀI ---
     var currentQuestionIndex by remember { mutableStateOf(0) }
@@ -171,6 +174,9 @@ fun StudentQuizScreen(
                 batch.commit()
                     .addOnSuccessListener {
                         Toast.makeText(context, "Đã nộp bài và đồng bộ lịch sử thành công!", Toast.LENGTH_SHORT).show()
+                        coroutineScope.launch {
+                            com.example.myapplication.utils.FirebaseUtils.updateUserStreak()
+                        }
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(context, "Lưu kết quả thất bại: ${e.message}", Toast.LENGTH_SHORT).show()

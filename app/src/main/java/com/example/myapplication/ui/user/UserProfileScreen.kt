@@ -53,7 +53,7 @@ fun UserProfileScreen(rootNavController: NavHostController) {
 
     val currentUser = auth.currentUser
     val userEmail = currentUser?.email ?: "Chưa cập nhật Email"
-    val userName = currentUser?.displayName ?: "Học viên xuất sắc"
+    var userName by remember { mutableStateOf(currentUser?.displayName ?: "Học viên xuất sắc") }
     val userId = currentUser?.uid ?: ""
 
     // State lưu trữ chỉ số Streak thực tế từ Firebase
@@ -70,12 +70,16 @@ fun UserProfileScreen(rootNavController: NavHostController) {
     // Fetch dữ liệu từ Firestore
     LaunchedEffect(userId) {
         if (userId.isNotBlank()) {
-            // 1. Lấy dữ liệu Streak
+            // 1. Lấy dữ liệu Streak và Name
             db.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document != null && document.exists()) {
                         currentStreak = document.getLong("currentStreak")?.toInt() ?: 0
                         highestStreak = document.getLong("highestStreak")?.toInt() ?: 0
+                        val name = document.getString("name")
+                        if (!name.isNullOrBlank()) {
+                            userName = name
+                        }
                     }
                 }
 

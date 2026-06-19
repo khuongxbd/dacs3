@@ -694,6 +694,18 @@ fun AdminQuizScreen() {
                                                 .document(quizIdToAssign)
                                                 .set(assignMap)
                                                 .addOnSuccessListener {
+                                                    // Sinh thông báo tự động
+                                                    val notiId = UUID.randomUUID().toString()
+                                                    val notiMap = hashMapOf(
+                                                        "notiId" to notiId,
+                                                        "title" to "Bài kiểm tra mới",
+                                                        "content" to "Giáo viên vừa giao bài kiểm tra '${targetQuizForAssign!!.title}' vào lớp.",
+                                                        "targetClassId" to classItem.classId,
+                                                        "createdAt" to System.currentTimeMillis(),
+                                                        "readBy" to emptyList<String>()
+                                                    )
+                                                    db.collection("notifications").document(notiId).set(notiMap)
+
                                                     Toast.makeText(context, "Đã giao mã đề vào lớp ${classItem.className}! 🎉", Toast.LENGTH_SHORT).show()
                                                     showAssignDialog = false
                                                     targetQuizForAssign = null

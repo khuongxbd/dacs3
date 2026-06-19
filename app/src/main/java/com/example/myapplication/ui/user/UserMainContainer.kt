@@ -16,6 +16,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.data.model.ClassModel
 import com.example.myapplication.data.model.ClassQuiz
+import com.example.myapplication.data.model.NotificationModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 sealed class UserTab(val route: String, val title: String, val icon: ImageVector) {
     object Home : UserTab("u_home", "Trang chủ", Icons.Default.Home)
@@ -34,12 +37,44 @@ fun UserMainContainer(navController: NavHostController) {
     // 🔥 STATE GIỮ BÀI THI ĐANG CHỌN ĐỂ TRUYỀN SANG ROUTE ĐỘC LẬP
     var globalSelectedQuiz by remember { mutableStateOf<ClassQuiz?>(null) }
 
+    var unreadCount by remember { mutableStateOf(0) }
+    val db = FirebaseFirestore.getInstance()
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+    LaunchedEffect(userId) {
+        if (userId.isEmpty()) return@LaunchedEffect
+        db.collection("classes").whereArrayContains("memberIds", userId)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot == null) return@addSnapshotListener
+                val classIds = snapshot.documents.map { it.id }
+                if (classIds.isNotEmpty()) {
+                    db.collection("notifications")
+                        .addSnapshotListener { notiSnap, _ ->
+                            if (notiSnap != null) {
+                                val notis = notiSnap.toObjects(NotificationModel::class.java)
+                                unreadCount = notis.count { it.targetClassId in classIds && !it.readBy.contains(userId) }
+                            }
+                        }
+                } else {
+                    unreadCount = 0
+                }
+            }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
                 items.forEachIndexed { index, tab ->
                     NavigationBarItem(
-                        icon = { Icon(tab.icon, contentDescription = tab.title) },
+                        icon = { 
+                            if (tab == UserTab.Notifications && unreadCount > 0) {
+                                BadgedBox(badge = { Badge { Text(unreadCount.toString()) } }) {
+                                    Icon(tab.icon, contentDescription = tab.title)
+                                }
+                            } else {
+                                Icon(tab.icon, contentDescription = tab.title) 
+                            }
+                        },
                         label = { Text(tab.title) },
                         selected = selectedItem == index,
                         onClick = {
@@ -167,9 +202,9 @@ fun UserMainContainer(navController: NavHostController) {
             composable(UserTab.Search.route) { UserSearchScreen() }
 
             composable(UserTab.Notifications.route) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Màn hình Thông báo học tập")
-                }
+                UserNotificationScreen(onBack = {
+                    subNavController.popBackStack()
+                })
             }
 
             composable(UserTab.Profile.route) {

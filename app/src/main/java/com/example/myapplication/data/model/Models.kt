@@ -97,5 +97,6 @@ data class NotificationModel(
     val title: String = "",
     val content: String = "",
     val targetClassId: String = "",
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    val readBy: List<String> = emptyList()
 )

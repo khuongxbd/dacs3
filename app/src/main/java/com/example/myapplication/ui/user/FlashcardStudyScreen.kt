@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.model.FlashcardSet
 import com.example.myapplication.data.model.WordItem
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,9 +80,9 @@ fun FlashcardStudyScreen(classId: String, setId: String, onBack: () -> Unit) {
                 }
 
                 if (studyMode == 0) {
-                    FlashcardView(words = words)
+                    FlashcardView(words = words, onFinish = onBack)
                 } else {
-                    QuizVocabView(words = words)
+                    QuizVocabView(words = words, onFinish = onBack)
                 }
             }
         }
@@ -88,10 +91,12 @@ fun FlashcardStudyScreen(classId: String, setId: String, onBack: () -> Unit) {
 
 // --- HÀM 1: GIAO DIỆN LẬT FLASHCARD ---
 @Composable
-fun FlashcardView(words: List<WordItem>) {
+fun FlashcardView(words: List<WordItem>, onFinish: () -> Unit) {
     var currentIndex by remember { mutableStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(targetValue = if (isFlipped) 180f else 0f, label = "cardFlip")
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         // Progress Bar kiểu Neobrutalism
@@ -128,22 +133,34 @@ fun FlashcardView(words: List<WordItem>) {
             ) { Text("BACK", fontWeight = FontWeight.ExtraBold) }
 
             Button(
-                onClick = { if (currentIndex < words.size - 1) { currentIndex++; isFlipped = false } },
+                onClick = { 
+                    if (currentIndex < words.size - 1) { 
+                        currentIndex++; isFlipped = false 
+                    } else {
+                        coroutineScope.launch {
+                            com.example.myapplication.utils.FirebaseUtils.updateUserStreak()
+                        }
+                        Toast.makeText(context, "Hoàn thành ôn tập!", Toast.LENGTH_SHORT).show()
+                        onFinish()
+                    }
+                },
                 modifier = Modifier.weight(1f).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LimeGreen, contentColor = Color.Black)
-            ) { Text("NEXT", fontWeight = FontWeight.ExtraBold) }
+            ) { Text(if (currentIndex < words.size - 1) "NEXT" else "HOÀN THÀNH", fontWeight = FontWeight.ExtraBold) }
         }
     }
 }
 
 // --- HÀM 2: GIAO DIỆN TRẮC NGHIỆM TỪ VỰNG ---
 @Composable
-fun QuizVocabView(words: List<WordItem>) {
+fun QuizVocabView(words: List<WordItem>, onFinish: () -> Unit) {
     var currentIndex by remember { mutableStateOf(0) }
     var selectedAnswer by remember { mutableStateOf("") }
     var isAnswered by remember { mutableStateOf(false) }
     val currentWord = words[currentIndex]
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val options = remember(currentIndex) {
         (words.filter { it.meaning != currentWord.meaning }.map { it.meaning }.shuffled().take(3) + currentWord.meaning).shuffled()
@@ -180,11 +197,21 @@ fun QuizVocabView(words: List<WordItem>) {
 
         if (isAnswered) {
             Button(
-                onClick = { if (currentIndex < words.size - 1) { currentIndex++; isAnswered = false; selectedAnswer = "" } },
+                onClick = { 
+                    if (currentIndex < words.size - 1) { 
+                        currentIndex++; isAnswered = false; selectedAnswer = "" 
+                    } else {
+                        coroutineScope.launch {
+                            com.example.myapplication.utils.FirebaseUtils.updateUserStreak()
+                        }
+                        Toast.makeText(context, "Hoàn thành bài tập!", Toast.LENGTH_SHORT).show()
+                        onFinish()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp).border(2.dp, Color.Black, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
-            ) { Text("TIẾP THEO", fontWeight = FontWeight.ExtraBold) }
+            ) { Text(if (currentIndex < words.size - 1) "TIẾP THEO" else "HOÀN TẤT", fontWeight = FontWeight.ExtraBold) }
         }
     }
 }

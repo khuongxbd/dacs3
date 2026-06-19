@@ -80,28 +80,7 @@ fun LoginScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(onClick = {
-                if (email.isBlank() || password.isBlank()) {
-                    Toast.makeText(context, "Nhập email & pass phía trên để đăng ký nhanh", Toast.LENGTH_SHORT).show()
-                    return@TextButton
-                }
-                isLoading = true
-                auth.createUserWithEmailAndPassword(email, password)
-                    .addOnSuccessListener { authResult ->
-                        val uid = authResult.user?.uid ?: ""
-                        val userData = hashMapOf("uid" to uid, "email" to email, "role" to "user", "name" to email.substringBefore("@"))
-                        db.collection("users").document(uid).set(userData)
-                            .addOnSuccessListener {
-                                isLoading = false
-                                Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                                navController.navigate(Screen.UserMain.route) {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
-                                }
-                            }
-                    }
-                    .addOnFailureListener {
-                        isLoading = false
-                        Toast.makeText(context, "Đăng ký thất bại: ${it.message}", Toast.LENGTH_SHORT).show()
-                    }
+                navController.navigate(Screen.Register.route)
             }) {
                 Text("Chưa có tài khoản? Đăng ký tại đây")
             }
