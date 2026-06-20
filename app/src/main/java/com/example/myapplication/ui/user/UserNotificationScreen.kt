@@ -58,11 +58,8 @@ fun UserNotificationScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Thông Báo", fontWeight = FontWeight.Black) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black
-                )
+                title = { Text("Thông Báo", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->

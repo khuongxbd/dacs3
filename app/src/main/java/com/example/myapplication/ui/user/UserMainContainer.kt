@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.user
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,7 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,7 +38,6 @@ fun UserMainContainer(navController: NavHostController) {
     val items = listOf(UserTab.Home, UserTab.Classes, UserTab.Search, UserTab.Notifications, UserTab.Profile)
     var selectedItem by remember { mutableStateOf(0) }
 
-    // 🔥 STATE GIỮ BÀI THI ĐANG CHỌN ĐỂ TRUYỀN SANG ROUTE ĐỘC LẬP
     var globalSelectedQuiz by remember { mutableStateOf<ClassQuiz?>(null) }
 
     var unreadCount by remember { mutableStateOf(0) }
@@ -62,21 +65,17 @@ fun UserMainContainer(navController: NavHostController) {
     }
 
     Scaffold(
+        containerColor = Color.Black,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color(0xFF0F0F0F),
+                tonalElevation = 8.dp,
+                modifier = Modifier.border(0.5.dp, Color.White.copy(0.1f))
+            ) {
                 items.forEachIndexed { index, tab ->
+                    val isSelected = selectedItem == index
                     NavigationBarItem(
-                        icon = { 
-                            if (tab == UserTab.Notifications && unreadCount > 0) {
-                                BadgedBox(badge = { Badge { Text(unreadCount.toString()) } }) {
-                                    Icon(tab.icon, contentDescription = tab.title)
-                                }
-                            } else {
-                                Icon(tab.icon, contentDescription = tab.title) 
-                            }
-                        },
-                        label = { Text(tab.title) },
-                        selected = selectedItem == index,
+                        selected = isSelected,
                         onClick = {
                             selectedItem = index
                             subNavController.navigate(tab.route) {
@@ -84,7 +83,24 @@ fun UserMainContainer(navController: NavHostController) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.title,
+                                tint = if (isSelected) Color(0xFFCCFF00) else Color.Gray
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = tab.title,
+                                fontSize = 10.sp,
+                                color = if (isSelected) Color(0xFFCCFF00) else Color.Gray
+                            )
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color.Transparent // Bỏ cái hình tròn nền mặc định
+                        )
                     )
                 }
             }
@@ -95,7 +111,6 @@ fun UserMainContainer(navController: NavHostController) {
             startDestination = UserTab.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // ==================== ROUTE 1: TRANG CHỦ ====================
             composable(UserTab.Home.route) {
                 UserHomeScreen(
                     navController = navController,
@@ -111,7 +126,6 @@ fun UserMainContainer(navController: NavHostController) {
                 )
             }
 
-            // ==================== ROUTE 2: LỚP HỌC ====================
             composable(UserTab.Classes.route) {
                 var currentSubScreen by remember { mutableStateOf("list") }
                 var selectedClass by remember { mutableStateOf<ClassModel?>(null) }
@@ -145,7 +159,6 @@ fun UserMainContainer(navController: NavHostController) {
                                     currentSubScreen = "typing_practice"
                                 },
                                 onNavigateToClassQuiz = { quizObj ->
-                                    // 🔥 SỬA ĐỂ ĐỒNG BỘ: Gán dữ liệu vào state chung và nhảy sang Route độc lập
                                     globalSelectedQuiz = quizObj
                                     subNavController.navigate("student_quiz_screen") {
                                         launchSingleTop = true
@@ -182,7 +195,6 @@ fun UserMainContainer(navController: NavHostController) {
                 }
             }
 
-            // ==================== 🔥 ROUTE: MÀN HÌNH LÀM BÀI ĐỘC LẬP ====================
             composable("student_quiz_screen") {
                 if (globalSelectedQuiz != null) {
                     StudentQuizScreen(
@@ -191,7 +203,6 @@ fun UserMainContainer(navController: NavHostController) {
                             globalSelectedQuiz = null
                             subNavController.popBackStack()
 
-                            // Đồng bộ lại chỉ số highlight mục BottomBar dựa vào màn hình trước đó
                             val currentRoute = subNavController.currentDestination?.route
                             selectedItem = if (currentRoute == UserTab.Home.route) 0 else 1
                         }
@@ -211,12 +222,10 @@ fun UserMainContainer(navController: NavHostController) {
                 UserProfileScreen(rootNavController = navController)
             }
 
-            // ==================== 🔥 ROUTE: MÀN HÌNH ÔN TẬP CÂU SAI ĐỘC LẬP ====================
             composable("review_wrongs_screen") {
                 ReviewWrongQuestionsScreen(
                     onBack = {
                         subNavController.popBackStack()
-                        // Trả màu Highlight BottomBar về lại Home (0) sau khi thoát ôn tập
                         selectedItem = 0
                     }
                 )

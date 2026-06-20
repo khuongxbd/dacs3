@@ -105,8 +105,8 @@ fun UserSearchScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tìm Kiếm Lớp Học", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                title = { Text("Tìm Kiếm Lớp Học", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->

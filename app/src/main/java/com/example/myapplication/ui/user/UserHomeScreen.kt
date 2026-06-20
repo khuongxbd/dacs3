@@ -53,7 +53,19 @@ fun UserHomeScreen(navController: NavHostController,
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid ?: ""
-    val userName = auth.currentUser?.displayName ?: "Học viên"
+    var userName by remember { mutableStateOf("Đang tải...") }
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    userName = document.getString("name") ?: "Học viên"
+                }
+                .addOnFailureListener {
+                    userName = "Học viên"
+                }
+        }
+    }
 
     val globalContext = LocalContext.current
 

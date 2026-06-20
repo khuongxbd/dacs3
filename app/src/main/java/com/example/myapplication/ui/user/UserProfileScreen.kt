@@ -114,8 +114,8 @@ fun UserProfileScreen(rootNavController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Hồ Sơ & Thống Kê", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                title = { Text("Hồ Sơ & Thống Kê", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->
